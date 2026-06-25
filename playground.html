@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sheet Webhook — Playground</title>
+<meta name="description" content="Paste your webhook URL, fill the form, and send a real test submission to your Google Sheet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f1729; --ink-soft:#475069; --line:#e7ebf3;
+    --blue:#2f6bff; --teal:#10b6c7; --green:#1bb673; --red:#e5484d;
+    --bg:#ffffff; --radius:16px;
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 12px 32px -12px rgba(47,107,255,.18);
+    --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--ink);
+    background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(55rem 38rem at 8% -8%, rgba(47,107,255,.10), transparent 60%),
+      radial-gradient(48rem 34rem at 100% 0%, rgba(16,182,199,.12), transparent 55%),
+      radial-gradient(42rem 32rem at 50% 112%, rgba(27,182,115,.08), transparent 55%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:1060px;margin:0 auto;padding:0 22px}
+  a{color:var(--blue);text-decoration:none}
+
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:saturate(180%) blur(12px);
+    background:rgba(255,255,255,.72);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:62px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.02em}
+  .logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+    background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;font-size:16px;
+    box-shadow:0 6px 16px -4px rgba(47,107,255,.5)}
+  .nav-links{display:flex;gap:24px;align-items:center;font-weight:500;font-size:14.5px}
+  .nav-links a{color:var(--ink-soft)} .nav-links a:hover{color:var(--ink)}
+  .nav-links a.active{color:var(--ink);font-weight:700}
+  @media(max-width:620px){.nav-links a:not(.active){display:none}}
+
+  header{padding:48px 0 18px;text-align:center}
+  .badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
+    padding:7px 15px;border-radius:99px;font-size:13px;font-weight:600;color:var(--ink-soft);
+    box-shadow:var(--shadow);margin-bottom:18px}
+  .dot{width:8px;height:8px;border-radius:99px;background:var(--teal);box-shadow:0 0 0 4px rgba(16,182,199,.18)}
+  h1{font-size:clamp(30px,5vw,46px);line-height:1.06;letter-spacing:-.035em;font-weight:900}
+  .grad{background:linear-gradient(115deg,var(--blue),var(--teal) 55%,var(--green));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  header p{max-width:560px;margin:14px auto 0;color:var(--ink-soft);font-size:16.5px}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px 0 60px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow)}
+  .panel h2{font-size:16px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;margin-bottom:4px}
+  .panel .hint{color:var(--ink-soft);font-size:13.5px;margin-bottom:16px}
+  .step-dot{width:24px;height:24px;border-radius:8px;display:inline-grid;place-items:center;color:#fff;
+    font-size:13px;font-weight:800;background:linear-gradient(135deg,var(--blue),var(--teal))}
+
+  label{display:block;font-weight:600;font-size:13px;margin:14px 0 6px;color:var(--ink)}
+  input,select,textarea{width:100%;font-family:inherit;font-size:14px;color:var(--ink);
+    border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:#fbfcfe;transition:.15s}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--blue);background:#fff;
+    box-shadow:0 0 0 4px rgba(47,107,255,.12)}
+  input.mono{font-family:var(--mono);font-size:12.5px}
+  .url-state{font-size:12px;margin-top:6px;font-weight:600;min-height:16px}
+  .url-state.ok{color:var(--green)} .url-state.warn{color:#b06000}
+
+  .fieldrow{display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;margin-bottom:8px;align-items:center}
+  .fieldrow input{margin:0}
+  .fieldrow .key{font-family:var(--mono);font-size:12.5px}
+  .rm{width:34px;height:38px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;
+    color:var(--red);font-size:16px;line-height:1;display:grid;place-items:center;transition:.15s}
+  .rm:hover{background:#fdecec;border-color:#f5c2c4}
+  .addbtn{margin-top:6px;background:#eef2fb;color:#33417a;border:1px dashed #c3cdef;border-radius:10px;
+    padding:10px;width:100%;font-weight:600;font-size:13.5px;cursor:pointer;transition:.15s}
+  .addbtn:hover{background:#e6ecfb}
+
+  .seg{display:inline-flex;background:#f1f3f8;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  .seg button{border:0;background:transparent;padding:7px 14px;border-radius:8px;font-weight:600;font-size:13px;
+    color:var(--ink-soft);cursor:pointer;font-family:var(--mono)}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(16,24,40,.12)}
+
+  .send{width:100%;margin-top:18px;border:0;border-radius:12px;padding:15px;font-weight:800;font-size:15.5px;
+    color:#fff;cursor:pointer;background:linear-gradient(120deg,var(--blue),var(--teal));
+    box-shadow:0 12px 26px -8px rgba(47,107,255,.5);transition:.18s}
+  .send:hover{transform:translateY(-2px)} .send:disabled{opacity:.6;cursor:wait;transform:none}
+  .ghostbtn{width:100%;margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:11px;
+    padding:12px;font-weight:600;font-size:14px;color:var(--ink);cursor:pointer;transition:.15s;
+    display:flex;align-items:center;justify-content:center;gap:8px}
+  .ghostbtn:hover{transform:translateY(-1px);border-color:#d4dcf0}
+
+  .preview{background:#0d1322;border-radius:12px;padding:16px;font-family:var(--mono);font-size:12.5px;
+    color:#cdd6f4;white-space:pre-wrap;word-break:break-word;line-height:1.6;max-height:230px;overflow:auto}
+  .preview .k{color:#7cc5ff} .preview .s{color:#8ce99a} .preview .mut{color:#6b779e}
+  .meta-line{display:flex;justify-content:space-between;color:var(--ink-soft);font-size:12px;margin:14px 0 6px}
+
+  .log{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+  .entry{border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:13px;background:#fbfcfe}
+  .entry.ok{border-color:#cdeede;background:#f2fbf6}
+  .entry.err{border-color:#f3cccd;background:#fdf2f2}
+  .entry .top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:3px}
+  .entry .top .t{font-family:var(--mono);font-weight:500;color:var(--ink-soft);font-size:11.5px}
+  .entry small{color:var(--ink-soft)}
+  .empty{color:var(--ink-soft);font-size:13.5px;text-align:center;padding:18px 0}
+
+  .note{margin-top:16px;background:#f0fbf6;border:1px solid #cdeede;border-radius:11px;padding:12px 14px;
+    font-size:13px;color:#147a51;line-height:1.5}
+  .note b{color:#0e6442}
+  footer{padding:34px 0;text-align:center;color:var(--ink-soft);font-size:13.5px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand"><span class="logo">🔗</span> Sheet Webhook</div>
+    <div class="nav-links">
+      <a href="index.html#steps">Setup</a>
+      <a href="index.html#code">Code</a>
+      <a href="playground.html" class="active">Playground</a>
+      <a href="https://github.com/MK-Chan-MECACA/sheet-webhook" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="wrap">
+    <span class="badge"><span class="dot"></span> Live tester</span>
+    <h1>Test your <span class="grad">webhook</span> for real</h1>
+    <p>Paste your webhook URL, fill the form, hit send. A real submission lands in your Google Sheet — no integration tools needed.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+
+    <!-- LEFT: builder -->
+    <div class="panel">
+      <h2><span class="step-dot">1</span> Your webhook</h2>
+      <p class="hint">Paste the URL from <b>🔗 Webhook ▸ Get Webhook URL</b> in your sheet.</p>
+      <input id="url" class="mono" placeholder="https://script.google.com/macros/s/AKfy…/exec" autocomplete="off" spellcheck="false">
+      <div id="urlState" class="url-state"></div>
+
+      <label style="margin-top:20px">Secret token <span style="font-weight:400;color:var(--ink-soft)">(only if you enabled it)</span></label>
+      <input id="token" class="mono" placeholder="leave blank if no secret key" autocomplete="off" spellcheck="false">
+
+      <h2 style="margin-top:24px"><span class="step-dot">2</span> Form fields</h2>
+      <p class="hint">These become the columns. Edit, add, or remove — headers build themselves.</p>
+      <div id="fields"></div>
+      <button class="addbtn" onclick="addField()">+ Add field</button>
+
+      <div class="meta-line" style="margin-top:22px">
+        <span>Send as</span>
+      </div>
+      <div class="seg" id="mode">
+        <button class="on" data-mode="form">Form fields</button>
+        <button data-mode="json">JSON body</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: preview + send + log -->
+    <div class="panel">
+      <h2><span class="step-dot">3</span> What gets sent</h2>
+      <p class="hint">Live preview of the exact payload.</p>
+      <div id="preview" class="preview"></div>
+
+      <button id="send" class="send" onclick="send()">⚡ Send to webhook</button>
+      <button class="ghostbtn" onclick="openRaw()">
+        View raw response ↗ <small style="color:var(--ink-soft);font-weight:500">(opens new tab)</small>
+      </button>
+
+      <div class="note" id="note">
+        <b>Heads up:</b> Google Apps Script doesn't return CORS headers, so the browser hides the response after “Send”. The row still lands in your sheet. Use <b>View raw response</b> to see the actual <span style="font-family:var(--mono)">{"ok":true}</span> in a new tab.
+      </div>
+
+      <div class="meta-line" style="margin-top:22px"><span>History</span><span id="count"></span></div>
+      <div class="log" id="log"><div class="empty">No tests sent yet.</div></div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="wrap">Sheet Webhook · <a href="index.html">Setup guide</a> · <a href="https://github.com/MK-Chan-MECACA/sheet-webhook" target="_blank" rel="noopener">GitHub</a></footer>
+
+<!-- hidden target so native form posts don't navigate away -->
+<iframe name="sw_sink" style="display:none"></iframe>
+
+<script>
+  let mode = 'form';
+  const fieldsEl = document.getElementById('fields');
+
+  const DEFAULTS = [
+    {k:'name',    v:'Aisha Tan'},
+    {k:'email',   v:'aisha@acme.co'},
+    {k:'message', v:'Please send me a quote.'}
+  ];
+
+  function rowTemplate(k, v){
+    const row = document.createElement('div');
+    row.className = 'fieldrow';
+    row.innerHTML =
+      '<input class="key" placeholder="field" value="'+esc(k)+'">' +
+      '<input class="val" placeholder="value" value="'+esc(v)+'">' +
+      '<button class="rm" title="remove">×</button>';
+    row.querySelector('.rm').onclick = ()=>{ row.remove(); refresh(); };
+    row.querySelectorAll('input').forEach(i=> i.addEventListener('input', refresh));
+    return row;
+  }
+  function addField(k, v){ fieldsEl.appendChild(rowTemplate(k||'', v||'')); refresh(); }
+  function esc(s){ return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  DEFAULTS.forEach(d=> fieldsEl.appendChild(rowTemplate(d.k, d.v)));
+
+  function collect(){
+    const out = {};
+    fieldsEl.querySelectorAll('.fieldrow').forEach(r=>{
+      const k = r.querySelector('.key').value.trim();
+      const v = r.querySelector('.val').value;
+      if(k) out[k] = v;
+    });
+    const tok = document.getElementById('token').value.trim();
+    if(tok) out.token = tok;
+    return out;
+  }
+
+  function refresh(){
+    const data = collect();
+    const pv = document.getElementById('preview');
+    if(mode==='json'){
+      pv.innerHTML = syntax(JSON.stringify(data, null, 2));
+    }else{
+      const lines = Object.keys(data).map(k=>
+        '<span class="k">'+esc(k)+'</span><span class="mut">=</span>'+esc(data[k]));
+      pv.innerHTML = lines.length ? lines.join('<span class="mut"> &amp; </span><br>')
+        : '<span class="mut">add a field…</span>';
+    }
+    validateUrl();
+  }
+
+  function syntax(json){
+    return esc(json)
+      .replace(/&quot;([^&]+)&quot;(\s*:)/g, '<span class="k">&quot;$1&quot;</span>$2')
+      .replace(/: &quot;([^&]*)&quot;/g, ': <span class="s">&quot;$1&quot;</span>');
+  }
+
+  function validateUrl(){
+    const u = document.getElementById('url').value.trim();
+    const el = document.getElementById('urlState');
+    if(!u){ el.textContent=''; el.className='url-state'; return false; }
+    const looksRight = /^https:\/\/script\.google\.com\/macros\/s\/.+\/(exec|dev)/.test(u);
+    if(looksRight){ el.textContent='✓ Looks like a valid Apps Script web app URL'; el.className='url-state ok'; }
+    else { el.textContent='⚠ Expected a https://script.google.com/macros/s/…/exec URL — sending anyway'; el.className='url-state warn'; }
+    return true;
+  }
+  document.getElementById('url').addEventListener('input', validateUrl);
+  document.getElementById('token').addEventListener('input', refresh);
+
+  // mode toggle
+  document.getElementById('mode').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    mode = b.dataset.mode;
+    document.querySelectorAll('#mode button').forEach(x=>x.classList.toggle('on', x===b));
+    refresh();
+  });
+
+  function now(){ const d = new Date(); return d.toLocaleTimeString(); }
+
+  async function send(){
+    const url = document.getElementById('url').value.trim();
+    if(!url){ document.getElementById('url').focus(); flashUrl(); return; }
+    const data = collect();
+    const btn = document.getElementById('send');
+    btn.disabled = true; btn.textContent = 'Sending…';
+
+    try{
+      if(mode==='json'){
+        await fetch(url, {
+          method:'POST', mode:'no-cors',
+          headers:{'Content-Type':'text/plain;charset=utf-8'}, // text/plain avoids CORS preflight
+          body: JSON.stringify(data)
+        });
+      }else{
+        const body = new URLSearchParams();
+        Object.keys(data).forEach(k=> body.append(k, data[k]));
+        await fetch(url, { method:'POST', mode:'no-cors', body }); // urlencoded, CORS-safe
+      }
+      logEntry(true, data);
+    }catch(err){
+      logEntry(false, data, err.message || String(err));
+    }finally{
+      btn.disabled = false; btn.textContent = '⚡ Send to webhook';
+    }
+  }
+
+  // Native form submit to a new tab — shows the REAL {"ok":true} response.
+  function openRaw(){
+    const url = document.getElementById('url').value.trim();
+    if(!url){ document.getElementById('url').focus(); flashUrl(); return; }
+    const data = collect();
+    const f = document.createElement('form');
+    f.method = 'POST'; f.action = url; f.target = '_blank';
+    Object.keys(data).forEach(k=>{
+      const i = document.createElement('input');
+      i.type='hidden'; i.name=k; i.value=data[k]; f.appendChild(i);
+    });
+    document.body.appendChild(f);
+    f.submit();
+    setTimeout(()=>f.remove(), 1000);
+    logEntry(true, data, null, ' (opened raw response)');
+  }
+
+  function flashUrl(){
+    const el = document.getElementById('urlState');
+    el.textContent='⚠ Paste your webhook URL first'; el.className='url-state warn';
+  }
+
+  let total = 0;
+  function logEntry(ok, data, errMsg, suffix){
+    total++;
+    const log = document.getElementById('log');
+    const empty = log.querySelector('.empty'); if(empty) empty.remove();
+    const e = document.createElement('div');
+    e.className = 'entry ' + (ok?'ok':'err');
+    const title = ok ? ('✓ Sent'+(suffix||'')) : '✕ Failed';
+    e.innerHTML =
+      '<div class="top"><span>'+title+'</span><span class="t">'+now()+'</span></div>' +
+      '<small>'+ (ok
+          ? (mode.toUpperCase()+' · '+Object.keys(data).filter(k=>k!=='token').length+' fields → row added. Check your sheet.')
+          : ('Error: '+esc(errMsg||'unknown'))) +
+      '</small>';
+    log.prepend(e);
+    document.getElementById('count').textContent = total+' sent';
+  }
+
+  refresh();
+</script>
+</body>
+</html>
