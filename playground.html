@@ -100,8 +100,10 @@
 
   .log{margin-top:14px;display:flex;flex-direction:column;gap:8px}
   .entry{border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:13px;background:#fbfcfe}
-  .entry.ok{border-color:#cdeede;background:#f2fbf6}
+  .entry.sent{border-color:#c9dbff;background:#f3f7ff}
+  .entry.open{border-color:#cdeede;background:#f2fbf6}
   .entry.err{border-color:#f3cccd;background:#fdf2f2}
+  .entry small b{color:var(--ink)}
   .entry .top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:3px}
   .entry .top .t{font-family:var(--mono);font-weight:500;color:var(--ink-soft);font-size:11.5px}
   .entry small{color:var(--ink-soft)}
@@ -168,13 +170,11 @@
       <p class="hint">Live preview of the exact payload.</p>
       <div id="preview" class="preview"></div>
 
-      <button id="send" class="send" onclick="send()">⚡ Send to webhook</button>
-      <button class="ghostbtn" onclick="openRaw()">
-        View raw response ↗ <small style="color:var(--ink-soft);font-weight:500">(opens new tab)</small>
-      </button>
+      <button id="verifyBtn" class="send" onclick="openRaw()">✅ Send &amp; verify ↗</button>
+      <button id="send" class="ghostbtn" onclick="send()">⚡ Quick send <span style="color:var(--ink-soft);font-weight:500;font-size:12.5px">(stay here · result hidden)</span></button>
 
       <div class="note" id="note">
-        <b>Heads up:</b> Google Apps Script doesn't return CORS headers, so the browser hides the response after “Send”. The row still lands in your sheet. Use <b>View raw response</b> to see the actual <span style="font-family:var(--mono)">{"ok":true}</span> in a new tab.
+        <b>Why two buttons?</b> Google Apps Script returns no CORS headers, so a normal send can't read the response — it can't tell a working webhook from a dead one. <b>Send &amp; verify</b> opens the real reply in a new tab: <span style="font-family:var(--mono)">{"ok":true}</span> = row added · <span style="font-family:var(--mono)">"Page not found"</span> = bad/old URL or not deployed. Use it to confirm.
       </div>
 
       <div class="meta-line" style="margin-top:22px"><span>History</span><span id="count"></span></div>
@@ -274,6 +274,7 @@
     if(!url){ document.getElementById('url').focus(); flashUrl(); return; }
     const data = collect();
     const btn = document.getElementById('send');
+    const orig = btn.innerHTML;
     btn.disabled = true; btn.textContent = 'Sending…';
 
     try{
@@ -288,11 +289,11 @@
         Object.keys(data).forEach(k=> body.append(k, data[k]));
         await fetch(url, { method:'POST', mode:'no-cors', body }); // urlencoded, CORS-safe
       }
-      logEntry(true, data);
+      logEntry('sent', data);
     }catch(err){
-      logEntry(false, data, err.message || String(err));
+      logEntry('err', data, err.message || String(err));
     }finally{
-      btn.disabled = false; btn.textContent = '⚡ Send to webhook';
+      btn.disabled = false; btn.innerHTML = orig;
     }
   }
 
@@ -310,7 +311,7 @@
     document.body.appendChild(f);
     f.submit();
     setTimeout(()=>f.remove(), 1000);
-    logEntry(true, data, null, ' (opened raw response)');
+    logEntry('open', data);
   }
 
   function flashUrl(){
@@ -319,21 +320,30 @@
   }
 
   let total = 0;
-  function logEntry(ok, data, errMsg, suffix){
+  function logEntry(kind, data, errMsg){
     total++;
     const log = document.getElementById('log');
     const empty = log.querySelector('.empty'); if(empty) empty.remove();
+    const n = Object.keys(data).filter(k=>k!=='token').length;
+    let title, sub;
+    if(kind==='sent'){
+      title = '➤ Request delivered';
+      sub = mode.toUpperCase()+' · '+n+' fields. The browser hides the response (no-cors), '
+          + 'so this is <b>not</b> a confirmation — check your sheet, or use <b>Send &amp; verify</b> for the real result.';
+    }else if(kind==='open'){
+      title = '↗ Verify tab opened';
+      sub = 'Read the new tab: <b>{"ok":true}</b> = row added · '
+          + '<b>{"ok":false…}</b> = rejected (token?) · <b>"Page not found"</b> = bad/old URL or not deployed.';
+    }else{
+      title = '✕ Could not send';
+      sub = 'Network error: '+esc(errMsg||'unknown')+' — check the URL.';
+    }
     const e = document.createElement('div');
-    e.className = 'entry ' + (ok?'ok':'err');
-    const title = ok ? ('✓ Sent'+(suffix||'')) : '✕ Failed';
+    e.className = 'entry ' + kind;
     e.innerHTML =
-      '<div class="top"><span>'+title+'</span><span class="t">'+now()+'</span></div>' +
-      '<small>'+ (ok
-          ? (mode.toUpperCase()+' · '+Object.keys(data).filter(k=>k!=='token').length+' fields → row added. Check your sheet.')
-          : ('Error: '+esc(errMsg||'unknown'))) +
-      '</small>';
+      '<div class="top"><span>'+title+'</span><span class="t">'+now()+'</span></div><small>'+sub+'</small>';
     log.prepend(e);
-    document.getElementById('count').textContent = total+' sent';
+    document.getElementById('count').textContent = total+' logged';
   }
 
   refresh();
