@@ -1,0 +1,5 @@
+# Push only the Apps Script files; ignore docs and local junk.
+**/**
+!Code.gs
+!Sidebar.html
+!appsscript.json

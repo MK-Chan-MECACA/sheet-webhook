@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    :root {
+      --blue: #4285F4;
+      --green: #34A853;
+      --muted: #5f6368;
+      --border: #dadce0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Google Sans', Roboto, Arial, sans-serif;
+      margin: 0; padding: 14px; color: #202124; font-size: 13px;
+    }
+    h1 { font-size: 15px; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 14px; line-height: 1.45; }
+    .card { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .label { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .url {
+      width: 100%; font-family: monospace; font-size: 11px; padding: 8px;
+      border: 1px solid var(--border); border-radius: 6px; background: #f8f9fa;
+      resize: none; word-break: break-all;
+    }
+    button {
+      border: 0; border-radius: 6px; padding: 9px 12px; font-size: 13px;
+      font-weight: 600; cursor: pointer; width: 100%; margin-top: 8px;
+    }
+    .primary { background: var(--blue); color: #fff; }
+    .ghost { background: #f1f3f4; color: #202124; }
+    .primary:hover { background: #3b78e7; }
+    .ghost:hover { background: #e8eaed; }
+    .row2 { display: flex; gap: 8px; }
+    .row2 button { width: 50%; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .ok { background: #e6f4ea; color: var(--green); }
+    .warn { background: #fef7e0; color: #b06000; }
+    .off { background: #f1f3f4; color: var(--muted); }
+    ol { margin: 6px 0 0; padding-left: 18px; line-height: 1.6; }
+    ol li { margin-bottom: 4px; }
+    .meta { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .danger { color: #b06000; font-size: 11px; margin-top: 8px; line-height: 1.4; }
+    .hidden { display: none; }
+    .toggle { display: flex; align-items: center; justify-content: space-between; }
+    .spin { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <h1>🔗 Sheet Webhook</h1>
+  <p class="sub">Paste this URL into your form's webhook field. Submissions land here automatically.</p>
+
+  <div id="loading" class="spin">Loading…</div>
+
+  <!-- DEPLOYED -->
+  <div id="ready" class="hidden">
+    <div class="card">
+      <div class="label">Webhook URL <span class="pill ok">● Live</span></div>
+      <textarea id="url" class="url" rows="3" readonly onclick="this.select()"></textarea>
+      <button class="primary" onclick="copyUrl()">📋 Copy URL</button>
+      <button class="ghost" onclick="test()">⚡ Send Test Row</button>
+      <div id="tokenWarn" class="danger hidden">⚠ This URL contains your secret token — keep it private.</div>
+    </div>
+
+    <div class="card">
+      <div class="toggle">
+        <div><b>🔒 Secret key</b> <span id="secPill" class="pill off">Off</span></div>
+        <button id="secBtn" class="ghost" style="width:auto;margin:0;padding:6px 12px;" onclick="toggleSecret()">Enable</button>
+      </div>
+      <div class="meta">When on, a private token is added to the URL. POSTs without it are rejected.</div>
+    </div>
+
+    <div class="card">
+      <div class="toggle">
+        <div><b>🧩 Field mapping</b> <span id="mapPill" class="pill off">Auto</span></div>
+        <button class="ghost" style="width:auto;margin:0;padding:6px 12px;" onclick="editMap()">Edit</button>
+      </div>
+      <div class="meta">Auto = headers from field names. Edit to rename, reorder, or drop columns.</div>
+    </div>
+
+    <div class="meta">Saving to tab: <b id="target"></b></div>
+  </div>
+
+  <!-- NOT DEPLOYED -->
+  <div id="setup" class="hidden">
+    <div class="card">
+      <div class="label">One-time setup <span class="pill warn">● Not deployed</span></div>
+      <ol>
+        <li>Top menu: <b>Deploy ▸ New deployment</b></li>
+        <li>Gear ⚙ ▸ choose <b>Web app</b></li>
+        <li>Execute as: <b>Me</b></li>
+        <li>Who has access: <b>Anyone</b></li>
+        <li><b>Deploy</b> ▸ <b>Authorize access</b></li>
+        <li>Reopen this sidebar</li>
+      </ol>
+      <button class="ghost" onclick="load()">🔄 I've deployed — refresh</button>
+    </div>
+  </div>
+
+  <script>
+    function load() {
+      show('loading');
+      google.script.run.withSuccessHandler(render).withFailureHandler(function(){ show('setup'); }).getWebhookInfo();
+    }
+    function render(info) {
+      if (!info.deployed) { show('setup'); return; }
+      document.getElementById('url').value = info.url;
+      document.getElementById('target').textContent = info.targetSheet;
+      paintSecret(info.secretEnabled);
+      paintMap(info.hasMapping);
+      show('ready');
+    }
+    function paintSecret(on) {
+      var pill = document.getElementById('secPill');
+      var btn = document.getElementById('secBtn');
+      pill.textContent = on ? 'On' : 'Off';
+      pill.className = 'pill ' + (on ? 'ok' : 'off');
+      btn.textContent = on ? 'Disable' : 'Enable';
+      document.getElementById('tokenWarn').classList.toggle('hidden', !on);
+    }
+    function paintMap(on) {
+      var pill = document.getElementById('mapPill');
+      pill.textContent = on ? 'Custom' : 'Auto';
+      pill.className = 'pill ' + (on ? 'ok' : 'off');
+    }
+    function show(id) {
+      ['loading', 'ready', 'setup'].forEach(function (k) {
+        document.getElementById(k).classList.toggle('hidden', k !== id);
+      });
+    }
+    function copyUrl() {
+      var ta = document.getElementById('url');
+      ta.select(); document.execCommand('copy');
+      var btn = event.target, old = btn.textContent;
+      btn.textContent = '✔ Copied!';
+      setTimeout(function () { btn.textContent = old; }, 1500);
+    }
+    function test() {
+      var btn = event.target;
+      btn.textContent = 'Sending…'; btn.disabled = true;
+      google.script.run
+        .withSuccessHandler(function () {
+          btn.textContent = '✔ Test row added!'; btn.disabled = false;
+          setTimeout(function () { btn.textContent = '⚡ Send Test Row'; }, 2000);
+        })
+        .withFailureHandler(function (e) {
+          btn.textContent = '⚡ Send Test Row'; btn.disabled = false; alert(e.message || e);
+        })
+        .sendTest();
+    }
+    function toggleSecret() {
+      var on = document.getElementById('secPill').textContent === 'On';
+      var btn = document.getElementById('secBtn');
+      btn.disabled = true; btn.textContent = '…';
+      google.script.run.withSuccessHandler(render).withFailureHandler(function(e){ alert(e.message||e); btn.disabled=false; }).setSecretEnabled(!on);
+    }
+    function editMap() {
+      google.script.run.editFieldMapping();
+      alert('Opening the "Webhook Config" tab — edit it there.');
+    }
+    load();
+  </script>
+</body>
+</html>
