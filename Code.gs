@@ -51,9 +51,24 @@ function doPost(e) {
   }
 }
 
-/** Visiting the URL in a browser just confirms the webhook is live. */
+/**
+ * Visiting the URL in a browser confirms the webhook is live AND reveals which
+ * spreadsheet this deployment actually writes to — the fastest way to catch a
+ * URL that's bound to a different sheet copy than the one you're looking at.
+ */
 function doGet() {
-  return jsonOut_({ ok: true, message: 'Webhook is live. Send POST requests here.' });
+  var info = { ok: true, message: 'Webhook is live. Send POST requests here.' };
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = getTargetSheet_();
+    info.spreadsheet = ss.getName();
+    info.spreadsheetUrl = ss.getUrl();
+    info.tab = sheet.getName();
+    info.rows = Math.max(0, sheet.getLastRow() - 1); // data rows, excluding header
+  } catch (e) {
+    info.bindingError = String(e && e.message || e);
+  }
+  return jsonOut_(info);
 }
 
 // ===========================================================================
