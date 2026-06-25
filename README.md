@@ -124,8 +124,25 @@ By default columns are auto-named from incoming field keys. To control them:
 
 - **Updating the code?** After editing `Code.gs`:
   **Deploy ▸ Manage deployments ▸ ✏ Edit ▸ Version: New version ▸ Deploy**.
-  The URL stays the same.
+  The URL stays the same. **Do not** click *New deployment* each time — that mints
+  a brand-new URL and leaves dead ones behind.
 - **Timestamp timezone** is set in `appsscript.json` (`Asia/Kuala_Lumpur`).
+
+## Troubleshooting
+
+**Sidebar says "Not reachable" / a form gets "Page not found":**
+The sidebar pings the URL anonymously (exactly like a 3rd-party form). If it fails,
+your active deployment isn't reachable by the outside world — almost always because
+you have **multiple deployments** or access isn't **Anyone**. Fix:
+
+1. **Deploy ▸ Manage deployments**.
+2. **Archive every** deployment in the list.
+3. **Deploy ▸ New deployment ▸ Web app** — Execute as **Me**, access **Anyone** (not
+   "Anyone with Google account").
+4. Reopen the sidebar — the badge turns green and the URL now matches reality.
+
+> Why it happens: `ScriptApp.getService().getUrl()` returns the *active* deployment,
+> which may not be the one you set to "Anyone" when several exist. One deployment = no ambiguity.
 
 ---
 

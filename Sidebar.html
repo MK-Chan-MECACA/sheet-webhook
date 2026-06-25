@@ -55,11 +55,22 @@
   <!-- DEPLOYED -->
   <div id="ready" class="hidden">
     <div class="card">
-      <div class="label">Webhook URL <span class="pill ok">● Live</span></div>
+      <div class="label">Webhook URL <span id="livePill" class="pill ok">● checking…</span></div>
       <textarea id="url" class="url" rows="3" readonly onclick="this.select()"></textarea>
       <button class="primary" onclick="copyUrl()">📋 Copy URL</button>
       <button class="ghost" onclick="test()">⚡ Send Test Row</button>
       <div id="tokenWarn" class="danger hidden">⚠ This URL contains your secret token — keep it private.</div>
+    </div>
+
+    <div id="unreach" class="card hidden" style="border-color:#f3cccd;background:#fdf2f2">
+      <div class="label" style="color:#b3261e">⚠ Not reachable from outside</div>
+      <div class="meta" style="color:#8a1c14;margin-top:0">Works for you, but a 3rd-party form gets “Page not found”. Usually means multiple deployments, or access isn’t “Anyone”.</div>
+      <ol style="margin:9px 0 0;padding-left:18px;font-size:13px;color:#8a1c14;line-height:1.65">
+        <li><b>Deploy ▸ Manage deployments</b></li>
+        <li>Archive <b>every</b> deployment listed</li>
+        <li><b>New deployment ▸ Web app</b>, access = <b>Anyone</b></li>
+        <li>Reopen this sidebar — badge should turn green</li>
+      </ol>
     </div>
 
     <div class="card">
@@ -106,9 +117,16 @@
       if (!info.deployed) { show('setup'); return; }
       document.getElementById('url').value = info.url;
       document.getElementById('target').textContent = info.targetSheet;
+      paintReach(info.reachable);
       paintSecret(info.secretEnabled);
       paintMap(info.hasMapping);
       show('ready');
+    }
+    function paintReach(ok) {
+      var pill = document.getElementById('livePill');
+      pill.textContent = ok ? '● Live' : '● Not reachable';
+      pill.className = 'pill ' + (ok ? 'ok' : 'warn');
+      document.getElementById('unreach').classList.toggle('hidden', !!ok);
     }
     function paintSecret(on) {
       var pill = document.getElementById('secPill');

@@ -374,10 +374,26 @@ function getWebhookInfo() {
   return {
     url: webhookUrl_(),
     deployed: !!deployedUrl,
+    // Real reachability: UrlFetchApp makes an ANONYMOUS external call (no owner
+    // cookies), so this behaves exactly like a 3rd-party form. Catches the
+    // "deployed but not set to Anyone / wrong deployment" trap.
+    reachable: deployedUrl ? checkReachable_(deployedUrl) : false,
     secretEnabled: !!secret,
     hasMapping: !!getMapping_(),
     targetSheet: getTargetSheet_().getName()
   };
+}
+
+/** GET the /exec anonymously and confirm our doGet JSON comes back. */
+function checkReachable_(url) {
+  try {
+    if (!url) return false;
+    var res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, followRedirects: true });
+    var body = res.getContentText() || '';
+    return body.indexOf('"ok":true') !== -1 || body.indexOf('Webhook is live') !== -1;
+  } catch (e) {
+    return false;
+  }
 }
 
 /** Deployed URL, with ?token=... appended when a secret is enabled. */
@@ -415,9 +431,19 @@ function sendTest() {
       message: 'Hello from setup test',
       _source: 'setup-test'
     }),
-    muteHttpExceptions: true
+    muteHttpExceptions: true,
+    followRedirects: true
   });
-  return res.getContentText();
+  var body = res.getContentText() || '';
+  // Only a real {"ok":true} counts. A "Page not found" / login page means the
+  // active deployment isn't reachable by outside forms.
+  if (body.indexOf('"ok":true') === -1) {
+    throw new Error(
+      'Webhook is NOT reachable for outside requests. Fix: Deploy ▸ Manage ' +
+      'deployments ▸ archive extras, keep ONE Web app with access = "Anyone".'
+    );
+  }
+  return body;
 }
 
 function sendTestFromMenu() {
